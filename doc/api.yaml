@@ -1,0 +1,1496 @@
+openapi: 3.0.3
+info:
+  title: WASATEXT
+  description: |-
+    A webapp for communication.
+  version: "1.0.0"
+tags:
+  - name: login
+    description: Endpoints for user authentication
+  - name: user
+    description: Endpoints for specific user mangement
+  - name: conversations
+    description: Endpoints to retrieve conversations
+  - name: conversation
+    description: Endpoints to retrieve and manage a specific conversation
+  - name: message
+    description: Endpoints to manage a specific message in a conversation
+  - name: group
+    description: Endpoints to manage a specific group
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []
+
+#login
+paths:
+  /session:
+    post:
+      tags: ["login"]
+      security: []
+      summary: Logs in the user
+      description: |-
+        If the user does not exist, it will be created,
+        and then the identifier is returned.
+        If the user exists the, the user identifier is returned.
+      operationId: doLogin
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Schema for entering username
+              properties:
+                name:
+                  type: string
+                  example: Trump
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 16
+                  description: The name of the user logging in or registering.
+        required: true
+      responses:
+        '201':
+          description: User login action successful
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for sucessfull login
+                properties:
+                  identifier:
+                    type: string
+                    example: "abcdef012345"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique id allocated to each user
+                additionalProperties: false
+
+#setMyUserName
+
+  /user/name:
+    put:
+      tags: ["user"]
+      summary: Updates the user's username
+      description: Changes the user's username to a new unique value.
+      operationId: setMyUserName
+      requestBody:
+        required: true
+        content: 
+          application/json:
+            schema:
+              type: object
+              description: schema for changing name of user
+              properties: 
+                newName:
+                  type: string
+                  example: DonaldTrump
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 16
+                  description: The new name of the user
+              required: 
+                - newName
+      responses:
+        '200':
+          description: Username successfully updated
+          content: 
+            application/json:
+              schema:
+                type: object
+                description: sucess schema for succesfull username update
+                properties:
+                  message:
+                    type: string
+                    example: "Username updated sucessfully"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Username updated sucessfully message
+                additionalProperties: false
+        '400':
+          description: Invalid username Format
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response Schema for a invalid username update
+                properties:
+                  error:
+                    type: string
+                    example: "Username Already In use"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Username already in use message
+        '401':
+          description: Authentication required
+          content: 
+            application/json:
+              schema:
+                type: object
+                description: response schema to unauthorized action
+                properties: 
+                  error:
+                    type: string
+                    example: "Authentication required"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Authentication required message
+
+#getMyConversations
+
+  /conversations:
+    get:
+      tags: ["conversations"]
+      summary: Get user's conversations
+      description: |-
+        Retrieves a list of conversations the user is part of,
+        sorted by the last message time.
+      operationId: getMyConversations
+      responses:
+        '200':
+          description: List of Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  description: array to conversations user is part of
+                  properties:
+                    conversationId:
+                      type: string
+                      example: "12345"
+                      pattern: '^.*?$'
+                      minLength: 3
+                      maxLength: 16
+                      description: unique identifier to each conversation
+                    name:
+                      type: string
+                      example: "DonaldTrump or Groupname"
+                      pattern: '^.*?$'
+                      minLength: 3
+                      maxLength: 16
+                      description: Name of person or group
+                    photoUrl:
+                      type: string
+                      example: "https://example.com/photo.jpg"
+                      pattern: '^.*?$'
+                      minLength: 3
+                      maxLength: 1000
+                      description: Url of group or person photo
+                    lastmessage:
+                      type: object
+                      description: the last message receved by user
+                      properties:
+                        text:
+                          type: string
+                          example: "Hello Im under the Water"
+                          pattern: '^.*?$'
+                          minLength: 1
+                          maxLength: 1000
+                          description: content of text message
+                        type:
+                          type: string
+                          enum: [text,photo]
+                          example: "text"
+                          pattern: '^.*?$'
+                          minLength: 4
+                          maxLength: 16
+                          description: type of last message
+
+                        timestamp:
+                          type: string
+                          format: date-time
+                          example: "2012-12-12T12:00:00Z" 
+                          pattern: '^.*?$'
+                          minLength: 3
+                          maxLength: 40
+                          description: Timestamp of last message
+                        sender:
+                          type: string
+                          example: "Harris"
+                          pattern: '^.*?$'
+                          minLength: 3
+                          maxLength: 16
+                          description: Username of the person who sent the message
+                  additionalProperties: false
+                minItems: 0
+                maxItems: 100  
+    
+        '401':
+          description: Authentication Required
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response scehma for Authentication required
+                properties:
+                  error:
+                    type: string
+                    example: "Authentication required."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Auth required error message
+                additionalProperties: false
+
+#getConversation
+  /conversations/{id}:
+    get:
+      tags: ["conversation"]
+      summary: Gets Conversation Details
+      description: Retrieves the messages and metadata from a specific conversation
+      operationId: getConversation
+      parameters:
+        - in: path
+          name: id 
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+            description: Unique identifier of the Conversation
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            default: 50
+            description: Maximum number of messages to retireve
+        - in: query
+          name: offset
+          required: false
+          schema: 
+            type: integer
+            default: 0
+            description: Number of Messages to Skip(for pagination)
+      responses:
+        '200':
+          description: conversation details
+          content: 
+            application/json:
+              schema:
+                type: object
+                description: basic conversation details of user
+                properties: 
+                  conversationId:
+                    type: string
+                    example: "6969"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: Unique identifier of the conversation
+                  name:
+                    type: string
+                    example: "Groupname or username"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: Name of the Group or User
+                  photoUrl:
+                    type: string
+                    example: "https://example.com/photo.jpg"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 1000
+                    description: url of the photo
+                  messages:
+                    type: array
+                    items:
+                      type: object
+                      description: array of messages receved by user
+                      properties: 
+                        messageId:
+                          type: string
+                          example: "23233"
+                          pattern: '^.*?$'
+                          minLength: 3
+                          maxLength: 16
+                          description: unique identifier of the message
+                        text:
+                          type: string
+                          example: "Halo welt!!!"
+                          pattern: '^.*?$'
+                          minLength: 1
+                          maxLength: 1000
+                          description: Content of the message
+                        type:
+                          type: string
+                          enum: [text,photo]
+                          example: "text"
+                          pattern: '^.*?$'
+                          minLength: 4
+                          maxLength: 16
+                          description: type of content in the message
+                        timestamp:
+                          type: string
+                          format: date-time
+                          example: "2012-12-12T12:00:00Z"
+                          pattern: '^.*?$'
+                          minLength: 3
+                          maxLength: 40
+                          description: time stamp of the message
+                        sender:
+                          type: string
+                          example: "Harris"
+                          pattern: '^.*?$'
+                          minLength: 3
+                          maxLength: 16
+                          description: usernme of the sender
+                    minItems: 1
+                    maxItems: 100
+                    description: Contents and metadata of message
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema: 
+                type: object
+                description: response schema for authentication required
+                properties:
+                  error:
+                    type: string
+                    example: "Authentication Required"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Auth required Error msg
+        '404':
+          description: Conversation not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for conversation not found
+                properties:
+                  error:
+                    type: string
+                    example: "Conversation not found."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: conversation not found message
+              
+#sendMessage
+
+  /conversations/{id}/message:
+    post:
+      tags: ["conversation"]
+      summary: Send a new message
+      description: Allows a user to send a new message in a specific conversation.
+      operationId: sendMessage
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: Unique identifier of the conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: schema to send message
+              properties:
+                text:
+                  type: string
+                  example: "Hello, how are you?"
+                  pattern: '^.*?$'
+                  minLength: 1
+                  maxLength: 1000
+                  description: message content
+                type:
+                  type: string
+                  enum: [text, photo]
+                  example: "text"
+                  pattern: '^.*?$'
+                  minLength: 4
+                  maxLength: 16
+                  description: Type of the message
+
+                photoUrl:
+                  type: string
+                  example: "https://example.com/photo.jpg"
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 1000
+                  description: Url of the photo
+              required:
+                - type
+      responses:
+        '201':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema to a message sent sucessfully
+                properties:
+                  messageId:
+                    type: string
+                    example: "67890"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique message identifier
+                  conversationId:
+                    type: string
+                    example: "12345"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique message identifier
+                  text:
+                    type: string
+                    example: "Hello, how are you?"
+                    pattern: '^.*?$'
+                    minLength: 1
+                    maxLength: 1000
+                    description: message content
+                  type:
+                    type: string
+                    enum: [text, photo]
+                    example: "text"
+                    pattern: '^.*?$'
+                    minLength: 4
+                    maxLength: 16
+                    description: type of the message
+                  photoUrl:
+                    type: string
+                    example: "https://example.com/photo.jpg"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 1000
+                    description: Url of the photo
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-01T12:00:00Z"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 40
+                    description: timestamp of the message
+                  sender:
+                    type: string
+                    example: "Harris"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: username of the sender
+        '400':
+          description: Invalid message content
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for invalid message content
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid message content."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: invalid message Message
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for authentication required
+                properties:
+                  error:
+                    type: string
+                    example: "Authentication required."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Auth required message
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: resonse schema for conversation not found
+                properties:
+                  error:
+                    type: string
+                    example: "Conversation not found."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: conversation not found message
+
+#forwardMessage
+
+  /conversations/{id}/message/{messageId}/forward:
+    post:
+      tags: ["conversation"]
+      summary: Forward a message
+      description: Allows a user to forward a message from one conversation to another.
+      operationId: forwardMessage
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the source conversation
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the message to forward
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: schema to forward message
+              properties:
+                targetConversationId:
+                  type: string
+                  example: "54321"
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 16
+                  description: unique conversation identifier
+              required:
+                - targetConversationId
+      responses:
+        '201':
+          description: Message forwarded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for sucessfully sent message
+                properties:
+                  messageId:
+                    type: string
+                    example: "78901"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique message identifier
+                  conversationId:
+                    type: string
+                    example: "54321"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique conversation identifier
+                  text:
+                    type: string
+                    example: "Hello, how are you?"
+                    pattern: '^.*?$'
+                    minLength: 1
+                    maxLength: 1000
+                    description: message content
+                  type:
+                    type: string
+                    enum: [text, photo]
+                    example: "text"
+                    pattern: '^.*?$'
+                    minLength: 4
+                    maxLength: 16
+                    description: type of the message
+                  photoUrl:
+                    type: string
+                    example: "https://example.com/photo.jpg"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 1000
+                    description: url of the photo
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2012-12-12T12:00:00Z"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 40
+                    description: timestamp of the photo
+                  sender:
+                    type: string
+                    example: "HArris"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: username of the sender
+        '400':
+          description: Invalid target conversation ID
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for inv target conversation id
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid target conversation ID."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Invalid target convo message
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for authentication required
+                properties:
+                  error:
+                    type: string
+                    example: "Authentication required."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: auth required message
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for message,target,source msh not found
+                properties:
+                  error:
+                    type: string
+                    example: "Source conversation, target conversation, or message not found."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Error message
+
+#commentMessage
+
+  /conversations/{id}/message/{messageId}/comment:
+    post:
+      tags: ["message"]
+      summary: Add a comment to a message
+      description: Allows a user to add a comment (reaction) to a specific message in a conversation.
+      operationId: commentMessage
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the conversation
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the message to comment on
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: schema to add comment
+              properties:
+                comment:
+                  type: string
+                  example: "👍"
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 16
+                  description: comment content
+              required:
+                - comment
+      responses:
+        '201':
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema to comment sucessfull
+                properties:
+                  commentId:
+                    type: string
+                    example: "98765"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique comment identifier
+                  messageId:
+                    type: string
+                    example: "67890"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique message identifier
+                  conversationId:
+                    type: string
+                    example: "12345"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique conversation identifier
+                  comment:
+                    type: string
+                    example: "👍"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: Comment content
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-01T12:00:00Z"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 40
+                    description: timestamp of comment
+                  author:
+                    type: string
+                    example: "Alice"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: Username of the commenter
+        '400':
+          description: Invalid comment content
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema to invalid comment content
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid comment content."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: invalid comment message
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                description: respinse schema for authen tication required
+                properties:
+                  error:
+                    type: string
+                    example: "Authentication required."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Auth required message
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: reponse schema for message not found
+                properties:
+                  error:
+                    type: string
+                    example: "Conversation or message not found."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: conversation not found message
+
+#uncommentMessage
+
+  /conversations/{id}/message/{messageId}/uncomment:
+    delete:
+      tags: ["message"]
+      summary: Remove a comment from a message
+      description: Allows a user to remove their previously added comment (reaction) from a specific message in a conversation.
+      operationId: uncommentMessage
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the conversation
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the message
+        - in: query
+          name: commentId
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the comment to be removed
+      responses:
+        '200':
+          description: Comment removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response for comment removed sucessfully
+                properties:
+                  message:
+                    type: string
+                    example: "Comment removed successfully."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: comment removed message
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for authentication required
+                properties:
+                  error:
+                    type: string
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    example: "Authentication required."
+                    description: authentication required message
+        '403':
+          description: Unauthorized to remove this comment
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema to attempting to remove a unauthorized comment
+                properties:
+                  error:
+                    type: string
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    example: "You are not authorized to remove this comment."
+                    description: unauthoried message
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: respnse schema for comment not found
+                properties:
+                  error:
+                    type: string
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    example: "Conversation, message, or comment not found."
+                    description: Comment not found message
+
+#deleteMessage
+  /conversations/{id}/message/{messageId}:
+    delete:
+      tags: ["message"]
+      summary: Delete a message
+      description: |-
+        Allows a user to delete a message they have
+        sent in a specific conversation.
+      operationId: deleteMessage
+      parameters:
+        - in: path
+          name: id 
+          required: true
+          schema: 
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the conversation
+        - in: path
+          name: messageId
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the message to delete
+      responses:
+        '200':
+          description: Message deleted sucessfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for message deleted sucessfully
+                properties:
+                  message:
+                    type: string
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    example: "Message Deleted Sucessfully."
+                    description: msg deleted message
+        '401':
+          description: Authentication required
+          content: 
+            application/json:
+              schema:
+                type: object
+                description: response schema for aithentication required
+                properties:
+                  error: 
+                    type: string
+                    example: "Authentication required."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: auth required message
+        '403':
+          description: Unauthorized to delete this message
+          content: 
+            application/json:
+              schema:
+                type: object
+                description: response for tring to delete a aunauthorized message
+                properties:
+                  error:
+                    type: string
+                    example: "You are not authorized to delete this message."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: not authorized message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response for conversation not found
+                properties: 
+                  error: 
+                    type: string
+                    example: "Conversation Not Found"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Convo not found message
+
+#creating a group(createGroup)
+
+  /groups:
+    post:
+      summary: Create a new group
+      description: Allows a user to create a new group with any number of other WASAText users.
+      operationId: createGroup
+      tags: ["group"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: schema to create a group
+              properties:
+                groupName:
+                  type: string
+                  example: "Friends Group"
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 16
+                  description: name of the group
+                members:
+                  type: array
+                  items:
+                    type: string
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: Username of the user
+                  example: ["user1", "user2", "user3"]
+                  pattern: '^.*?$'
+                  minItems: 1
+                  maxItems: 100
+                  description: usernames of the members of the group
+              required:
+                - groupName
+      responses:
+        '201':
+          description: Group created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response to group created sucessfully
+                properties:
+                  groupId:
+                    type: string
+                    example: "group123"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique group identifier
+                  groupName:
+                    type: string
+                    example: "Friends Group"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: Name of the Group
+                  admin:
+                    type: string
+                    example: "user1"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: username of the Admin of the group
+                  members:
+                    type: array
+                    items:
+                      type: string
+                    example: ["user1", "user2", "user3"]
+                    minItems: 1
+                    maxItems: 100
+                    description: usernames of the members of the group
+                  photoUrl:
+                    type: string
+                    example: "https://example.com/group-photo.jpg"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 1000
+                    description: Url of the photo
+        '401':
+          description: Authentication required
+        '400':
+          description: Invalid request data
+
+#setGroupName
+
+  /groups/{groupId}/name:
+    put:
+      summary: Update group name
+      description: Allows the admin of a group to update its name.
+      operationId: setGroupName
+      tags: ["group"]
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: schema to change group name
+              properties:
+                newName:
+                  type: string
+                  example: "New Group Name"
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 16
+                  description: New name of the Group
+              required:
+                - newName
+      responses:
+        '200':
+          description: Group name updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for sucessfully changing grouo name
+                properties:
+                  message:
+                    type: string
+                    example: "Group name updated successfully."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: 200 success message
+                  groupName:
+                    type: string
+                    example: "Trumpgroup2"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: new group name
+        '401':
+          description: Authentication required
+        '403':
+          description: Only the admin can update the group name
+        '404':
+          description: Group not found
+
+#setGroupPhoto
+
+  /groups/{groupId}/photo:
+    put:
+      summary: Update group photo
+      description: Allows the admin of a group to update its photo.
+      operationId: setGroupPhoto
+      tags: ["group"]
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: photo of group
+              properties:
+                photoUrl:
+                  type: string
+                  example: "https://example.com/new-group-photo.jpg"
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 1000
+                  description: Url of the Photo
+              required:
+                - photoUrl
+      responses:
+        '200':
+          description: Group photo updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response to sucess in group photo change
+                properties:
+                  message:
+                    type: string
+                    example: "Group photo updated successfully."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: 200 sucess message
+                  photoUrl:
+                    type: string
+                    example: "https://example.com/new-group-photo.jpg"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 1000
+                    description: Url of the photo
+        '401':
+          description: Authentication required
+        '403':
+          description: Only the admin can update the group photo
+        '404':
+          description: Group not found
+
+#add people to group(addToGroup)
+
+  /groups/{groupId}/add:
+    post:
+      summary: Add a user to a group
+      description: Allows the admin or a group member to add another user to the group.
+      operationId: addToGroup
+      tags: ["group"]
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: unique id of the user
+              properties:
+                userId:
+                  type: string
+                  example: "user2"
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 16
+                  description: unique user identifier
+              required:
+                - userId
+      responses:
+        '200':
+          description: User added to the group successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for user added sucessfully
+                properties:
+                  message:
+                    type: string
+                    example: "User added to the group successfully."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: user added message
+                  userId:
+                    type: string
+                    example: "user2"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 16
+                    description: unique user identifier
+        '401':
+          description: Authentication required
+        '403':
+          description: Unauthorized to add a user to the group
+        '404':
+          description: Group or user not found
+
+#leaveGroup
+
+  /groups/{groupId}/leave:
+    delete:
+      summary: Leave a Group
+      description: |-
+        Allows a User to Leave a Group
+        If the User the admin,they must assign a new admin before leaving
+        If the admin the only member,the group is deleted when they leave
+      operationId: leaveGroup
+      tags: ["group"]
+      parameters:
+        - in: path
+          name: groupId
+          required: true
+          schema: 
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: ID of the group
+        - in: query
+          name: newAdmin
+          required: false
+          schema:
+            type: string
+            pattern: '^.*?$'
+            minLength: 3
+            maxLength: 16
+          description: |-
+            ID of the new admin (required if the user leaving
+            the group is the admin and there are other members).
+           
+      responses:
+        '200':
+          description: User left the group sucessfully or Group deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for user left group
+                properties:
+                  message:
+                    type: string
+                    example: "You left the group"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: left group message
+        '400':
+          description: Invalid Request or new admin not Provided when required
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for admin not assigned when admin leaving
+                properties:
+                  error:
+                    type: string
+                    example: "Admin must assign a new admin before leaving"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: error message to admin befoer leaving group
+        '401':
+          description: Authentication Required
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for authentication required
+                properties:
+                  error:
+                    type: string
+                    example: "Authentication required."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: auth required message
+
+        '403':
+          description: |-
+            User not Authorized to leave the group or invalid admin assignment.
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for unathourized admin assignment
+                properties: 
+                  error: 
+                    type: string
+                    example: "You cannot assign a non member as an admin"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: |-
+                      Error when admin assigns a non member of the group as admin
+        '404':
+          description: Group not found or not a member of group
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for group not found
+                properties:
+                  error:
+                    type: string
+                    example: "Group Not found or not member of the group"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: group not found or not part of the group msg
+
+#setMyPhoto
+
+  /user/photo:
+    put:
+      summary: Update user's profile photo
+      description: Allows a user to update their profile photo.
+      operationId: setMyPhoto
+      tags: ["user"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: users photo url
+              properties:
+                photoUrl:
+                  type: string
+                  example: "https://example.com/my-new-photo.jpg"
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 1000
+                  description: url of photo
+              required:
+                - photoUrl
+      responses:
+        '200':
+          description: Profile photo updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for profile photo updated sucessfully
+                properties:
+                  message:
+                    type: string
+                    example: "Profile photo updated successfully."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: pic updated sucessfully message
+                  photoUrl:
+                    type: string
+                    example: "https://example.com/my-new-photo.jpg"
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 1000
+                    description: Url of photo
+        '400':
+          description: Invalid photo URL
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for invalid photo URL
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid photo URL."
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: invalid url of the photo
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                description: response schema for authentication required
+                properties:
+                  error:
+                    type: string
+                    example: "Authentication required."  
+                    pattern: '^.*?$'
+                    minLength: 3
+                    maxLength: 60
+                    description: Authentication reqired message      
